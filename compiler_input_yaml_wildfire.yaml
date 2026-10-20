@@ -1,0 +1,25 @@
+# Axon compiler executor input for the wildfire classifier.
+# Run from this directory: outputs/ and intermediate/ are created in the working directory.
+wildfire_model:
+  model_name: wildfire
+  tflite_model: trained_models/wildfire_classifier_int8.tflite
+  float_model:
+  train_data:
+  test_data: compiler_data/x_test_wildfire.npy
+  test_labels: compiler_data/y_test_wildfire.npy
+  test_labels_format: just_labels
+  classification_labels: ["no_fire", "fire"]
+  test_vectors: all
+  header_file_test_vector_cnt: 4
+  # Same settings as the MLPerf Tiny VWW sample: int32 softmax output, constants in NVM.
+  run_all_variants: False
+  conv2d_setting: local_psum
+  psum_buffer_placement: interlayer_buffer
+  normalize_scaleshift: True
+  disable_op_quantization: True
+  skip_softmax_op: False
+  constants_location: NVM
+  no_striping: False
+  op_radix: 0
+  cpu_op_codes_list: {25: 100}
+  log_level: info

@@ -1,0 +1,9 @@
+.venv/
+data/
+trained_models/
+compiler_data/
+outputs/
+intermediate/
+logs/
+__pycache__/
+*.pyc

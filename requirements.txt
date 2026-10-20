@@ -1,0 +1,6 @@
+numpy
+tensorflow==2.19.0
+PyYAML>=6.0
+matplotlib>=3.7
+pillow>=10
+kagglehub>=0.3

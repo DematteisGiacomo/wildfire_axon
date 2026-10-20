@@ -1,0 +1,28 @@
+# Training configuration for the wildfire image classifier
+data:
+  kaggle_dataset: elmadafri/the-wildfire-dataset
+  input_size: 96           # model input, must match the firmware (MODEL_WIDTH/HEIGHT)
+  train_cache_size: 128    # training images are cached larger for random-crop augmentation
+  demo_images_per_class: 12  # test-split images exported for the UART feeder demo
+  seed: 42
+
+model:
+  alpha: 0.25              # MobileNetV1 width multiplier (same backbone as MLPerf Tiny VWW)
+  dropout: 0.3
+  classes: [no_fire, fire]
+
+fit:
+  batch_size: 32
+  head_epochs: 15
+  head_learning_rate: 0.001
+  finetune_epochs: 80
+  finetune_learning_rate: 0.0003
+  early_stopping_patience: 15
+
+quantize:
+  calibration_samples: 400
+
+paths:
+  data_dir: data
+  model_dir: trained_models
+  compiler_data_dir: compiler_data
