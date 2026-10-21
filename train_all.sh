@@ -24,6 +24,7 @@ echo "=== 3. Quantize to TFLite ==="
 
 echo "=== 4. Evaluate ==="
 "$PYTHON" evaluate.py
+"$PYTHON" analyze_errors.py
 
 echo "=== 5. Compile for Axon ==="
 ./compile_axon.sh "$SDK_EDGE_AI"

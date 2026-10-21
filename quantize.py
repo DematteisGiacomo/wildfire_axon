@@ -13,6 +13,12 @@ from keras_model import load_model, representative_input
 from wildfire_data import load_config, load_split, to_model_input
 
 
+def save(path: str, data: bytes) -> None:
+    with open(path, "wb") as f:
+        f.write(data)
+    print(f"Saved {path} ({len(data)} bytes)")
+
+
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--config", default="config.yaml")
@@ -28,12 +34,8 @@ def main() -> None:
                                               len(x_train)), replace=False)
     x_cal = to_model_input(x_train[picks])
 
-    converter = tf.lite.TFLiteConverter.from_keras_model(model)
-    fp32 = converter.convert()
-    fp32_path = os.path.join(model_dir, "wildfire_classifier_fp32.tflite")
-    with open(fp32_path, "wb") as f:
-        f.write(fp32)
-    print(f"Saved {fp32_path} ({len(fp32)} bytes)")
+    save(os.path.join(model_dir, "wildfire_classifier_fp32.tflite"),
+         tf.lite.TFLiteConverter.from_keras_model(model).convert())
 
     converter = tf.lite.TFLiteConverter.from_keras_model(model)
     converter.optimizations = [tf.lite.Optimize.DEFAULT]
@@ -41,11 +43,7 @@ def main() -> None:
     converter.target_spec.supported_ops = [tf.lite.OpsSet.TFLITE_BUILTINS_INT8]
     converter.inference_input_type = tf.int8
     converter.inference_output_type = tf.int8
-    int8 = converter.convert()
-    int8_path = os.path.join(model_dir, "wildfire_classifier_int8.tflite")
-    with open(int8_path, "wb") as f:
-        f.write(int8)
-    print(f"Saved {int8_path} ({len(int8)} bytes)")
+    save(os.path.join(model_dir, "wildfire_classifier_int8.tflite"), converter.convert())
 
 
 if __name__ == "__main__":

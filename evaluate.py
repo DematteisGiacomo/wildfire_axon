@@ -13,18 +13,19 @@ from keras_model import load_model
 from wildfire_data import load_config, load_split, to_model_input
 
 
-def tflite_predict(path: str, x: np.ndarray) -> np.ndarray:
+def tflite_probs(path: str, x: np.ndarray) -> np.ndarray:
     interp = tf.lite.Interpreter(model_path=path)
     interp.allocate_tensors()
     inp, out = interp.get_input_details()[0], interp.get_output_details()[0]
     in_scale, in_zp = inp["quantization"]
-    preds = []
+    out_scale, out_zp = out["quantization"]
+    probs = []
     for sample in x:
         q = np.clip(np.round(sample / in_scale + in_zp), -128, 127).astype(np.int8)
         interp.set_tensor(inp["index"], q[None])
         interp.invoke()
-        preds.append(interp.get_tensor(out["index"])[0])
-    return np.argmax(np.asarray(preds), axis=1)
+        probs.append((interp.get_tensor(out["index"])[0].astype(np.float32) - out_zp) * out_scale)
+    return np.asarray(probs)
 
 
 def report(name: str, y_true: np.ndarray, y_pred: np.ndarray, classes: list[str]) -> None:
@@ -54,7 +55,8 @@ def main() -> None:
     model = load_model(os.path.join(model_dir, "wildfire_classifier.keras"))
     report("Keras float", y, np.argmax(model.predict(x, verbose=0), axis=1), classes)
     report("TFLite int8", y,
-           tflite_predict(os.path.join(model_dir, "wildfire_classifier_int8.tflite"), x), classes)
+           tflite_probs(os.path.join(model_dir, "wildfire_classifier_int8.tflite"), x).argmax(1),
+           classes)
 
 
 if __name__ == "__main__":

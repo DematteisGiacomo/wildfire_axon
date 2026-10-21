@@ -9,7 +9,7 @@ import os
 import numpy as np
 import tensorflow as tf
 
-from keras_model import build_model
+from keras_model import build_model, set_backbone_trainable
 from wildfire_data import class_weights, load_config, load_split, to_model_input
 
 
@@ -22,6 +22,8 @@ def rgb565_roundtrip_tf(x: tf.Tensor) -> tf.Tensor:
 
 
 def make_train_dataset(x: np.ndarray, y: np.ndarray, size: int, batch: int, seed: int):
+    """Random crop from the larger cached image, then downscale to the model input."""
+
     def augment(img, label):
         img = tf.cast(img, tf.float32)
         src = tf.shape(img)[0]
@@ -51,7 +53,8 @@ def plot_history(histories: list[dict], path: str) -> None:
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
 
-    h = {k: sum((hist[k] for hist in histories), []) for k in histories[0]}
+    h = {k: sum((hist[k] for hist in histories), []) for k in ("loss", "accuracy",
+                                                                "val_loss", "val_accuracy")}
     head_epochs = len(histories[0]["loss"])
     epochs = range(1, len(h["loss"]) + 1)
     fig, axes = plt.subplots(1, 2, figsize=(12, 4))
@@ -89,14 +92,9 @@ def main() -> None:
     weights = class_weights(y_train, len(classes))
     print(f"Train {len(y_train)}, val {len(y_val)}, class weights {weights}")
 
-    model, backbone = build_model(
-        input_size=size,
-        num_classes=len(classes),
-        alpha=cfg["model"]["alpha"],
-        dropout=cfg["model"]["dropout"],
-    )
+    model = build_model(size, len(classes), cfg["model"]["alpha"], cfg["model"]["dropout"])
 
-    backbone.trainable = False
+    set_backbone_trainable(model, False)
     model.compile(
         optimizer=tf.keras.optimizers.Adam(fit["head_learning_rate"]),
         loss="sparse_categorical_crossentropy",
@@ -106,7 +104,7 @@ def main() -> None:
     head = model.fit(train_ds, validation_data=val_data, epochs=fit["head_epochs"],
                      class_weight=weights, verbose=2)
 
-    backbone.trainable = True
+    set_backbone_trainable(model, True)
     steps = fit["finetune_epochs"] * len(train_ds)
     model.compile(
         optimizer=tf.keras.optimizers.Adam(
@@ -115,7 +113,6 @@ def main() -> None:
         loss="sparse_categorical_crossentropy",
         metrics=["accuracy"],
     )
-    keras_path = os.path.join(model_dir, "wildfire_classifier.keras")
     finetune = model.fit(
         train_ds,
         validation_data=val_data,
@@ -128,6 +125,7 @@ def main() -> None:
                                              restore_best_weights=True),
         ],
     )
+    keras_path = os.path.join(model_dir, "wildfire_classifier.keras")
     model.save(keras_path)
     print(f"Saved {keras_path}")
 

@@ -2,7 +2,7 @@
 data:
   kaggle_dataset: elmadafri/the-wildfire-dataset
   input_size: 96           # model input, must match the firmware (MODEL_WIDTH/HEIGHT)
-  train_cache_size: 128    # training images are cached larger for random-crop augmentation
+  train_cache_size: 224    # training images are cached larger for random-crop augmentation
   demo_images_per_class: 12  # test-split images exported for the UART feeder demo
   seed: 42
 
